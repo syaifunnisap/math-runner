@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tiger Math Runner</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      overflow: hidden;
+      background: linear-gradient(#87ceeb, #dff6ff);
+    }
+
+    #game {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ground {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 180px;
+      background: #6cc551;
+      border-top: 6px solid #4d9b38;
+    }
+
+    .tiger {
+      position: absolute;
+      bottom: 120px;
+      left: 100px;
+      font-size: 80px;
+      transition: 0.2s;
+      z-index: 10;
+    }
+
+    .obstacle {
+      position: absolute;
+      bottom: 110px;
+      right: -200px;
+      width: 150px;
+      height: 120px;
+      background: #777;
+      border-radius: 20px;
+      border-bottom: 10px solid #555;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 32px;
+      font-weight: bold;
+    }
+
+    .top-ui {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 20;
+    }
+
+    .level,
+    .score {
+      background: white;
+      padding: 10px 20px;
+      border-radius: 15px;
+      font-size: 22px;
+      font-weight: bold;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    .hearts {
+      font-size: 40px;
+    }
+
+    .choices {
+      position: absolute;
+      top: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: grid;
+      grid-template-columns: repeat(2, 220px);
+      gap: 20px;
+      z-index: 20;
+    }
+
+    .choice {
+      padding: 18px;
+      font-size: 28px;
+      border: none;
+      border-radius: 18px;
+      background: white;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+      box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+    }
+
+    .choice:hover {
+      transform: scale(1.05);
+      background: #ffe066;
+    }
+
+    .start-screen,
+    .game-over,
+    .finish-screen {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      z-index: 100;
+      text-align: center;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .title {
+      font-size: 70px;
+      margin-bottom: 20px;
+      text-shadow: 3px 3px 10px black;
+    }
+
+    .subtitle {
+      font-size: 28px;
+      margin-bottom: 40px;
+    }
+
+    .btn {
+      padding: 20px 50px;
+      border: none;
+      border-radius: 20px;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #ffcc00;
+      transition: 0.2s;
+    }
+
+    .btn:hover {
+      transform: scale(1.05);
+      background: #ffdd33;
+    }
+
+    .message {
+      position: absolute;
+      top: 320px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 42px;
+      font-weight: bold;
+      z-index: 50;
+      color: white;
+      text-shadow: 2px 2px 8px black;
+    }
+  </style>
+</head>
+<body>
+
+<div id="game">
+
+  <div class="top-ui">
+    <div class="level">Level: <span id="level">1</span></div>
+    <div class="score">Score: <span id="score">0</span></div>
+    <div class="hearts" id="hearts">❤️❤️❤️</div>
+  </div>
+
+  <div class="choices" id="choices"></div>
+
+  <div class="message" id="message"></div>
+
+  <div class="tiger" id="tiger">🐯🚲</div>
+
+  <div class="obstacle" id="obstacle">2 × 3</div>
+
+  <div class="ground"></div>
+
+  <div class="start-screen" id="startScreen">
+    <div class="title">Tiger Math Runner</div>
+    <div class="subtitle">
+      Jawab soal matematika dan bantu macan mencapai finish! 🐯
+    </div>
+    <button class="btn" onclick="startGame()">START</button>
+  </div>
+
+  <div class="game-over hidden" id="gameOver">
+    <div class="title">GAME OVER</div>
+    <button class="btn" onclick="restartGame()">RESTART</button>
+  </div>
+
+  <div class="finish-screen hidden" id="finishScreen">
+    <div class="title">YOU WIN! 🎉</div>
+    <div class="subtitle">Macan berhasil mencapai finish!</div>
+    <button class="btn" onclick="restartGame()">PLAY AGAIN</button>
+  </div>
+
+</div>
+
+<script>
+
+const obstacle = document.getElementById('obstacle');
+const choicesDiv = document.getElementById('choices');
+const tiger = document.getElementById('tiger');
+const heartsDisplay = document.getElementById('hearts');
+const levelDisplay = document.getElementById('level');
+const scoreDisplay = document.getElementById('score');
+const message = document.getElementById('message');
+
+let lives = 3;
+let level = 1;
+let score = 0;
+let questionCount = 0;
+let obstacleX = window.innerWidth;
+let gameRunning = false;
+let speed = 6;
+
+let currentAnswer = 0;
+
+const correctSound = new Audio('https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8d80c8f6a.mp3?filename=correct-2-46134.mp3');
+const wrongSound = new Audio('https://cdn.pixabay.com/download/audio/2022/03/15/audio_9f9d6d62f1.mp3?filename=error-126627.mp3');
+const bgMusic = new Audio('https://cdn.pixabay.com/download/audio/2022/10/25/audio_946af7d9d1.mp3?filename=fun-kids-126381.mp3');
+
+bgMusic.loop = true;
+bgMusic.volume = 0.3;
+
+function startGame() {
+  document.getElementById('startScreen').classList.add('hidden');
+  gameRunning = true;
+  bgMusic.play();
+  generateQuestion();
+  moveObstacle();
+}
+
+function restartGame() {
+  location.reload();
+}
+
+function generateQuestion() {
+
+  let num1, num2, operator;
+
+  if(level <= 2) {
+    operator = '×';
+    num1 = random(1,5);
+    num2 = random(1,5);
+  }
+  else if(level <= 4) {
+    operator = Math.random() < 0.5 ? '×' : '÷';
+    num1 = random(1,5);
+    num2 = random(1,5);
+  }
+  else {
+    operator = Math.random() < 0.5 ? '×' : '÷';
+    num1 = random(6,10);
+    num2 = random(6,10);
+  }
+
+  if(operator === '×') {
+    currentAnswer = num1 * num2;
+    obstacle.innerText = `${num1} × ${num2}`;
+  }
+  else {
+    currentAnswer = num1;
+    obstacle.innerText = `${num1 * num2} ÷ ${num2}`;
+  }
+
+  createChoices();
+}
+
+function createChoices() {
+  choicesDiv.innerHTML = '';
+
+  let answers = [currentAnswer];
+
+  while(answers.length < 4) {
+    let wrong = currentAnswer + random(-10,10);
+
+    if(wrong !== currentAnswer && wrong > 0 && !answers.includes(wrong)) {
+      answers.push(wrong);
+    }
+  }
+
+  answers.sort(() => Math.random() - 0.5);
+
+  const labels = ['A', 'B', 'C', 'D'];
+
+  answers.forEach((answer, index) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice';
+    btn.innerText = `${labels[index]}. ${answer}`;
+
+    btn.onclick = () => checkAnswer(answer);
+
+    choicesDiv.appendChild(btn);
+  });
+}
+
+function checkAnswer(answer) {
+
+  if(!gameRunning) return;
+
+  if(answer === currentAnswer) {
+    correctSound.play();
+    score += 10;
+    questionCount++;
+
+    showMessage('CORRECT! 🎉');
+
+    tiger.style.transform = 'translateY(-50px)';
+
+    setTimeout(() => {
+      tiger.style.transform = 'translateY(0px)';
+    }, 300);
+
+    if(questionCount >= 5) {
+      nextLevel();
+    }
+    else {
+      resetObstacle();
+      generateQuestion();
+    }
+  }
+  else {
+    wrongSound.play();
+    lives--;
+
+    showMessage('OOPS! 😭');
+
+    updateHearts();
+
+    tiger.style.transform = 'translateX(-20px)';
+
+    setTimeout(() => {
+      tiger.style.transform = 'translateX(0px)';
+    }, 300);
+
+    if(lives <= 0) {
+      gameOver();
+    }
+    else {
+      resetObstacle();
+      generateQuestion();
+    }
+  }
+
+  scoreDisplay.innerText = score;
+}
+
+function nextLevel() {
+  level++;
+  questionCount = 0;
+
+  if(level > 5) {
+    winGame();
+    return;
+  }
+
+  speed += 2;
+
+  levelDisplay.innerText = level;
+
+  showMessage(`LEVEL ${level}! 🔥`);
+
+  resetObstacle();
+  generateQuestion();
+}
+
+function updateHearts() {
+  heartsDisplay.innerText = '❤️'.repeat(lives);
+}
+
+function gameOver() {
+  gameRunning = false;
+  bgMusic.pause();
+  document.getElementById('gameOver').classList.remove('hidden');
+}
+
+function winGame() {
+  gameRunning = false;
+  bgMusic.pause();
+  document.getElementById('finishScreen').classList.remove('hidden');
+}
+
+function moveObstacle() {
+
+  function animate() {
+
+    if(!gameRunning) return;
+
+    obstacleX -= speed;
+
+    obstacle.style.right = (window.innerWidth - obstacleX) + 'px';
+
+    if(obstacleX < 200) {
+      lives--;
+      updateHearts();
+
+      wrongSound.play();
+
+      if(lives <= 0) {
+        gameOver();
+        return;
+      }
+
+      resetObstacle();
+      generateQuestion();
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+}
+
+function resetObstacle() {
+  obstacleX = window.innerWidth;
+}
+
+function random(min,max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function showMessage(text) {
+  message.innerText = text;
+
+  setTimeout(() => {
+    message.innerText = '';
+  }, 1000);
+}
+
+window.addEventListener('keydown', (e) => {
+
+  const buttons = document.querySelectorAll('.choice');
+
+  if(e.key.toLowerCase() === 'a') buttons[0]?.click();
+  if(e.key.toLowerCase() === 'b') buttons[1]?.click();
+  if(e.key.toLowerCase() === 'c') buttons[2]?.click();
+  if(e.key.toLowerCase() === 'd') buttons[3]?.click();
+
+});
+
+</script>
+
+</body>
+</html>
