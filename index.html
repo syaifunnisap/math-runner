@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dino Math Runner</title>
+  <title>Dino vs Math Aliens</title>
 
   <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
 
@@ -11,7 +11,7 @@
     body {
       margin: 0;
       overflow: hidden;
-      background: #87ceeb;
+      background: #120028;
       font-family: Arial, sans-serif;
     }
 
@@ -29,277 +29,240 @@ const config = {
   type: Phaser.AUTO,
   width: 1280,
   height: 720,
-  backgroundColor: '#87CEEB',
+  backgroundColor: '#120028',
   scene: {
-    preload,
-    create,
-    update
+    preload: preload,
+    create: create,
+    update: update
   }
 };
 
-const game = new Phaser.Game(config);
+new Phaser.Game(config);
 
 let dino;
-let obstacle;
-let obstacleText;
+let alien;
+let questionText;
 let answerButtons = [];
+let playerHearts;
+let alienHPBar;
 let xpText;
 let levelText;
-let heartsText;
-let messageText;
-let startButton;
-let startTitle;
-let finishText;
+let infoText;
 
-let gameStarted = false;
+let started = false;
 let currentAnswer = 0;
-let currentLevel = 1;
-let currentQuestion = 0;
+let playerLives = 3;
+let alienHP = 100;
 let xp = 0;
-let lives = 3;
-let obstacleSpeed = 2;
-
-let bg1;
-let bg2;
-let grass1;
-let grass2;
-
-const questionsPerLevel = 5;
+let level = 1;
+let questionsAnswered = 0;
 
 function preload() {
+
 }
 
 function create() {
 
-  // ============================
+  // ==============================
   // BACKGROUND
-  // ============================
+  // ==============================
 
-  bg1 = this.add.rectangle(640, 360, 1280, 720, 0x87CEEB);
+  this.add.rectangle(640,360,1280,720,0x120028);
 
-  // awan
-  for(let i=0; i<8; i++) {
-    this.add.ellipse(
+  // stars
+  for(let i=0;i<150;i++) {
+    this.add.circle(
       Phaser.Math.Between(0,1280),
-      Phaser.Math.Between(50,250),
-      180,
-      70,
+      Phaser.Math.Between(0,720),
+      Phaser.Math.Between(1,3),
       0xffffff
-    ).setAlpha(0.8);
+    ).setAlpha(Math.random());
   }
 
-  // pohon kiri kanan
-  for(let i=0; i<10; i++) {
+  // planets
+  this.add.circle(180,120,70,0x5f27cd);
+  this.add.circle(1100,150,90,0xff6b81);
 
-    // kiri
-    this.add.rectangle(80, 150 + i*80, 25, 80, 0x8B5A2B);
-    this.add.circle(80, 110 + i*80, 50, 0x2ecc71);
+  // floor
+  this.add.rectangle(640,650,1280,160,0x1f1147);
 
-    // kanan
-    this.add.rectangle(1200, 150 + i*80, 25, 80, 0x8B5A2B);
-    this.add.circle(1200, 110 + i*80, 50, 0x2ecc71);
-  }
-
-  // rumput
-  grass1 = this.add.rectangle(640, 650, 1280, 140, 0x4CAF50);
-  grass2 = this.add.rectangle(640, 700, 1280, 60, 0x2E7D32);
-
-  // jalan
-  this.add.rectangle(640, 550, 1280, 220, 0x666666);
-
-  // garis jalan
-  for(let i=0; i<20; i++) {
-    this.add.rectangle(100 + i*70, 550, 40, 8, 0xffffff);
-  }
-
-  // ============================
+  // ==============================
   // UI
-  // ============================
+  // ==============================
 
-  xpText = this.add.text(40, 20, '⭐ XP: 0', {
-    fontSize: '34px',
-    color: '#ffffff',
-    fontStyle: 'bold',
-    backgroundColor: '#00000088',
-    padding: {x:15,y:10}
+  xpText = this.add.text(30,20,'⭐ XP: 0',{
+    fontSize:'32px',
+    color:'#ffffff',
+    backgroundColor:'#000000',
+    padding:{x:15,y:10}
   });
 
-  levelText = this.add.text(450, 20, 'LEVEL 1', {
-    fontSize: '34px',
-    color: '#ffffff',
-    fontStyle: 'bold',
-    backgroundColor: '#00000088',
-    padding: {x:15,y:10}
+  levelText = this.add.text(530,20,'LEVEL 1',{
+    fontSize:'32px',
+    color:'#ffffff',
+    backgroundColor:'#000000',
+    padding:{x:15,y:10}
   });
 
-  heartsText = this.add.text(1000, 20, '❤️❤️❤️', {
-    fontSize: '40px'
+  playerHearts = this.add.text(1020,20,'❤️❤️❤️',{
+    fontSize:'40px'
   });
 
-  // ============================
-  // DINO CHARACTER
-  // ============================
+  // ==============================
+  // PLAYER DINO
+  // ==============================
 
-  dino = this.add.text(250, 520, '🦖🚲', {
-    fontSize: '90px'
-  });
+  dino = this.add.rectangle(250,470,170,170,0x2ecc71)
+    .setStrokeStyle(8,0x145a32);
 
-  // goyang-goyang animation
+  this.add.text(250,470,'🦖',{
+    fontSize:'90px'
+  }).setOrigin(0.5);
+
+  // bounce animation
   this.tweens.add({
-    targets: dino,
-    y: 510,
-    duration: 400,
-    yoyo: true,
-    repeat: -1
+    targets:dino,
+    y:455,
+    duration:500,
+    yoyo:true,
+    repeat:-1
   });
 
-  // ============================
-  // OBSTACLE
-  // ============================
+  // ==============================
+  // ALIEN
+  // ==============================
 
-  obstacle = this.add.rectangle(640, 250, 100, 80, 0x777777)
-    .setStrokeStyle(6,0x555555);
+  alien = this.add.rectangle(1020,420,190,190,0x9b59b6)
+    .setStrokeStyle(8,0x5b2c6f);
 
-  obstacleText = this.add.text(640, 250, '', {
-    fontSize: '42px',
-    color: '#ffffff',
-    fontStyle: 'bold'
+  this.add.text(1020,420,'👾',{
+    fontSize:'110px'
   }).setOrigin(0.5);
 
-  obstacle.visible = false;
-  obstacleText.visible = false;
+  // alien HP bar background
+  this.add.rectangle(1020,260,220,25,0x444444);
 
-  // ============================
-  // MESSAGE
-  // ============================
+  // alien HP bar
+  alienHPBar = this.add.rectangle(1020,260,220,25,0xff4757);
 
-  messageText = this.add.text(640, 180, '', {
-    fontSize: '50px',
-    color: '#ffff00',
-    fontStyle: 'bold',
-    stroke: '#000000',
-    strokeThickness: 8
+  // ==============================
+  // QUESTION
+  // ==============================
+
+  questionText = this.add.text(640,170,'',{
+    fontSize:'64px',
+    color:'#ffff00',
+    fontStyle:'bold',
+    stroke:'#000000',
+    strokeThickness:10
   }).setOrigin(0.5);
 
-  // ============================
+  // ==============================
+  // INFO TEXT
+  // ==============================
+
+  infoText = this.add.text(640,270,'',{
+    fontSize:'42px',
+    color:'#ffffff',
+    fontStyle:'bold',
+    stroke:'#000000',
+    strokeThickness:8
+  }).setOrigin(0.5);
+
+  // ==============================
   // ANSWER BUTTONS
-  // ============================
+  // ==============================
 
-  createAnswerButtons.call(this);
+  createButtons.call(this);
 
-  // ============================
+  // ==============================
   // START SCREEN
-  // ============================
+  // ==============================
 
-  this.add.rectangle(640,360,1280,720,0x000000,0.6)
-    .setDepth(100)
-    .setName('overlay');
+  const overlay = this.add.rectangle(640,360,1280,720,0x000000,0.75);
 
-  startTitle = this.add.text(640,220,
-    'DINO MATH RUNNER',
-    {
+  const title = this.add.text(640,220,
+    'DINO VS MATH ALIENS',{
       fontSize:'72px',
       color:'#ffffff',
       fontStyle:'bold',
       stroke:'#000000',
       strokeThickness:10
     }
-  ).setOrigin(0.5).setDepth(101);
+  ).setOrigin(0.5);
 
-  this.add.text(640,330,
-    'Jawab soal matematika untuk menghancurkan batu!\n\n⭐ Jawaban benar = +10 XP\n❤️ Salah = kehilangan nyawa',
-    {
-      align:'center',
+  const desc = this.add.text(640,360,
+    'Jawab matematika untuk menyerang alien!\n⭐ Benar = +10 XP\n❤️ Salah = kehilangan nyawa',{
       fontSize:'34px',
+      align:'center',
       color:'#ffffff',
-      backgroundColor:'#00000088',
+      backgroundColor:'#000000',
       padding:{x:20,y:20}
     }
-  ).setOrigin(0.5).setDepth(101);
+  ).setOrigin(0.5);
 
-  startButton = this.add.text(640,520,
-    'START GAME',
-    {
-      fontSize:'48px',
+  const startBtn = this.add.text(640,540,
+    'START GAME',{
+      fontSize:'50px',
       color:'#000000',
-      backgroundColor:'#FFD93D',
+      backgroundColor:'#feca57',
       padding:{x:30,y:20},
       fontStyle:'bold'
     }
   )
   .setOrigin(0.5)
-  .setInteractive()
-  .setDepth(101);
+  .setInteractive();
 
-  startButton.on('pointerdown', ()=> {
-    startGame.call(this);
-  });
+  startBtn.on('pointerdown', ()=> {
 
-  // ============================
-  // KEYBOARD SUPPORT
-  // ============================
+    overlay.destroy();
+    title.destroy();
+    desc.destroy();
+    startBtn.destroy();
 
-  this.input.keyboard.on('keydown-A', ()=> {
-    if(answerButtons[0]) checkAnswer.call(this, answerButtons[0].answer);
-  });
+    started = true;
 
-  this.input.keyboard.on('keydown-B', ()=> {
-    if(answerButtons[1]) checkAnswer.call(this, answerButtons[1].answer);
-  });
-
-  this.input.keyboard.on('keydown-C', ()=> {
-    if(answerButtons[2]) checkAnswer.call(this, answerButtons[2].answer);
-  });
-
-  this.input.keyboard.on('keydown-D', ()=> {
-    if(answerButtons[3]) checkAnswer.call(this, answerButtons[3].answer);
+    generateQuestion.call(this);
   });
 
 }
 
 // =====================================
-// CREATE ANSWER BUTTONS
+// CREATE BUTTONS
 // =====================================
 
-function createAnswerButtons() {
+function createButtons() {
 
   const labels = ['A','B','C','D'];
 
-  for(let i=0; i<4; i++) {
+  for(let i=0;i<4;i++) {
 
-    let x = 300 + (i%2)*400;
-    let y = 80 + Math.floor(i/2)*90;
+    const x = i < 2 ? 360 : 720;
+    const y = i % 2 === 0 ? 470 : 580;
 
-    const btn = this.add.text(x,y,'',{
-      fontSize:'32px',
+    const button = this.add.text(x,y,'',{
+      fontSize:'34px',
       color:'#000000',
       backgroundColor:'#ffffff',
-      padding:{x:25,y:15},
+      padding:{x:30,y:18},
       fontStyle:'bold'
     })
     .setInteractive();
 
-    btn.on('pointerdown', ()=> {
-      checkAnswer.call(this, btn.answer);
+    button.on('pointerover', ()=> {
+      button.setScale(1.05);
     });
 
-    answerButtons.push(btn);
+    button.on('pointerout', ()=> {
+      button.setScale(1);
+    });
+
+    button.on('pointerdown', ()=> {
+      checkAnswer.call(this, button.answer);
+    });
+
+    answerButtons.push(button);
   }
-}
-
-// =====================================
-// START GAME
-// =====================================
-
-function startGame() {
-
-  gameStarted = true;
-
-  this.children.getByName('overlay').destroy();
-  startTitle.destroy();
-  startButton.destroy();
-
-  generateQuestion.call(this);
 }
 
 // =====================================
@@ -308,58 +271,40 @@ function startGame() {
 
 function generateQuestion() {
 
-  let num1;
-  let num2;
+  let a;
+  let b;
   let operator;
 
-  if(currentLevel <= 2) {
+  if(level <= 2) {
+    a = Phaser.Math.Between(1,5);
+    b = Phaser.Math.Between(1,5);
     operator = '×';
-    num1 = Phaser.Math.Between(1,5);
-    num2 = Phaser.Math.Between(1,5);
   }
-  else if(currentLevel <=4) {
+  else if(level <= 4) {
+    a = Phaser.Math.Between(1,5);
+    b = Phaser.Math.Between(1,5);
     operator = Phaser.Math.Between(0,1) ? '×' : '÷';
-    num1 = Phaser.Math.Between(1,5);
-    num2 = Phaser.Math.Between(1,5);
   }
   else {
+    a = Phaser.Math.Between(6,10);
+    b = Phaser.Math.Between(6,10);
     operator = Phaser.Math.Between(0,1) ? '×' : '÷';
-    num1 = Phaser.Math.Between(6,10);
-    num2 = Phaser.Math.Between(6,10);
   }
 
   let question;
 
   if(operator === '×') {
-    currentAnswer = num1 * num2;
-    question = `${num1} × ${num2}`;
+    currentAnswer = a*b;
+    question = a + ' × ' + b;
   }
   else {
-    currentAnswer = num1;
-    question = `${num1*num2} ÷ ${num2}`;
+    currentAnswer = a;
+    question = (a*b) + ' ÷ ' + b;
   }
 
-  obstacleText.setText(question);
+  questionText.setText(question);
 
-  createChoices(question);
-
-  // ukuran obstacle berdasarkan kesulitan
-  let difficulty = Math.max(num1,num2);
-
-  obstacle.width = 80 + difficulty*18;
-  obstacle.height = 60 + difficulty*15;
-
-  obstacle.scale = 0.2;
-  obstacle.x = 640;
-  obstacle.y = 200;
-
-  obstacleText.scale = 0.2;
-  obstacleText.x = 640;
-  obstacleText.y = 200;
-
-  obstacle.visible = true;
-  obstacleText.visible = true;
-
+  createChoices();
 }
 
 // =====================================
@@ -386,8 +331,7 @@ function createChoices() {
   answerButtons.forEach((btn,index)=> {
 
     btn.answer = choices[index];
-
-    btn.setText(`${labels[index]}. ${choices[index]}`);
+    btn.setText(labels[index] + '. ' + choices[index]);
   });
 }
 
@@ -397,94 +341,109 @@ function createChoices() {
 
 function checkAnswer(answer) {
 
-  if(!gameStarted) return;
+  if(!started) return;
 
   if(answer === currentAnswer) {
 
     xp += 10;
-    currentQuestion++;
+    alienHP -= 20;
+    questionsAnswered++;
 
-    xpText.setText(`⭐ XP: ${xp}`);
+    xpText.setText('⭐ XP: ' + xp);
 
-    showMessage.call(this,'CORRECT! +10 XP ⭐','#00ff00');
+    alienHPBar.width = alienHP * 2.2;
 
-    // obstacle pecah
+    showInfo('CORRECT! +10 XP ⭐','#2ed573');
+
+    // laser effect
+    const laser = this.add.rectangle(500,430,400,10,0x00ffff);
+
     this.tweens.add({
-      targets:[obstacle, obstacleText],
+      targets:laser,
       alpha:0,
-      duration:300,
-      onComplete: ()=> {
-
-        obstacle.alpha = 1;
-        obstacleText.alpha = 1;
-
-        if(currentQuestion >= questionsPerLevel) {
-          nextLevel.call(this);
-        }
-        else {
-          generateQuestion.call(this);
-        }
+      duration:200,
+      onComplete:()=> {
+        laser.destroy();
       }
     });
 
-    // dino bounce
+    // alien hit animation
     this.tweens.add({
-      targets:dino,
-      y:480,
-      duration:120,
-      yoyo:true
+      targets:alien,
+      x:1050,
+      duration:100,
+      yoyo:true,
+      repeat:2
+    });
+
+    if(alienHP <= 0) {
+
+      level++;
+      alienHP = 100;
+
+      if(level > 5) {
+        winGame.call(this);
+        return;
+      }
+
+      levelText.setText('LEVEL ' + level);
+
+      showInfo('ALIEN DEFEATED! 👽','#feca57');
+    }
+
+    this.time.delayedCall(700, ()=> {
+      alienHPBar.width = alienHP * 2.2;
+      generateQuestion.call(this);
     });
 
   }
   else {
 
-    lives--;
+    playerLives--;
 
-    heartsText.setText('❤️'.repeat(lives));
+    playerHearts.setText('❤️'.repeat(playerLives));
 
-    showMessage.call(this,'OOPS! 😭','#ff0000');
+    showInfo('OOPS! 😭','#ff4757');
 
-    // shake camera
-    this.cameras.main.shake(300,0.01);
+    // camera shake
+    this.cameras.main.shake(200,0.01);
 
-    // dino mundur
+    // alien attack effect
+    const blast = this.add.circle(420,430,60,0xff0000);
+
     this.tweens.add({
-      targets:dino,
-      x:220,
-      duration:120,
-      yoyo:true
+      targets:blast,
+      alpha:0,
+      scale:2,
+      duration:300,
+      onComplete:()=> {
+        blast.destroy();
+      }
     });
 
-    if(lives <= 0) {
+    if(playerLives <= 0) {
       gameOver.call(this);
       return;
     }
 
-    generateQuestion.call(this);
+    this.time.delayedCall(600, ()=> {
+      generateQuestion.call(this);
+    });
   }
 }
 
 // =====================================
-// NEXT LEVEL
+// INFO TEXT
 // =====================================
 
-function nextLevel() {
+function showInfo(text,color) {
 
-  currentLevel++;
-  currentQuestion = 0;
+  infoText.setText(text);
+  infoText.setColor(color);
 
-  if(currentLevel > 5) {
-    winGame.call(this);
-    return;
-  }
-
-  obstacleSpeed += 0.8;
-
-  levelText.setText(`LEVEL ${currentLevel}`);
-
-  showMessage.call(this,`LEVEL ${currentLevel}! 🔥`,'#ffff00');
-
-  generateQuestion.call(this);
+  setTimeout(()=> {
+    infoText.setText('');
+  },1000);
 }
 
 // =====================================
@@ -493,33 +452,28 @@ function nextLevel() {
 
 function gameOver() {
 
-  gameStarted = false;
+  started = false;
 
-  this.add.rectangle(640,360,1280,720,0x000000,0.7);
+  this.add.rectangle(640,360,1280,720,0x000000,0.75);
 
-  this.add.text(640,260,
-    'GAME OVER',
-    {
-      fontSize:'80px',
-      color:'#ff0000',
-      fontStyle:'bold'
-    }
-  ).setOrigin(0.5);
+  this.add.text(640,260,'GAME OVER',{
+    fontSize:'90px',
+    color:'#ff4757',
+    fontStyle:'bold'
+  }).setOrigin(0.5);
 
-  this.add.text(640,360,
-    `XP AKHIR: ${xp}`,
-    {
+  this.add.text(640,380,
+    'TOTAL XP: ' + xp,{
       fontSize:'42px',
       color:'#ffffff'
     }
   ).setOrigin(0.5);
 
-  const restart = this.add.text(640,500,
-    'RESTART',
-    {
-      fontSize:'50px',
-      backgroundColor:'#FFD93D',
+  const restart = this.add.text(640,540,
+    'RESTART',{
+      fontSize:'52px',
       color:'#000000',
+      backgroundColor:'#feca57',
       padding:{x:30,y:20},
       fontStyle:'bold'
     }
@@ -538,35 +492,29 @@ function gameOver() {
 
 function winGame() {
 
-  gameStarted = false;
+  started = false;
 
-  this.add.rectangle(640,360,1280,720,0x000000,0.7);
+  this.add.rectangle(640,360,1280,720,0x000000,0.75);
 
-  finishText = this.add.text(640,260,
-    'YOU WIN! 🎉',
-    {
-      fontSize:'90px',
-      color:'#ffff00',
-      fontStyle:'bold',
-      stroke:'#000000',
-      strokeThickness:10
-    }
-  ).setOrigin(0.5);
+  this.add.text(640,260,'YOU SAVED THE GALAXY! 🌌',{
+    fontSize:'72px',
+    color:'#feca57',
+    fontStyle:'bold',
+    align:'center'
+  }).setOrigin(0.5);
 
-  this.add.text(640,380,
-    `TOTAL XP: ${xp}`,
-    {
-      fontSize:'48px',
+  this.add.text(640,390,
+    'FINAL XP: ' + xp,{
+      fontSize:'44px',
       color:'#ffffff'
     }
   ).setOrigin(0.5);
 
-  const replay = this.add.text(640,520,
-    'PLAY AGAIN',
-    {
-      fontSize:'48px',
-      backgroundColor:'#FFD93D',
+  const replay = this.add.text(640,550,
+    'PLAY AGAIN',{
+      fontSize:'52px',
       color:'#000000',
+      backgroundColor:'#feca57',
       padding:{x:30,y:20},
       fontStyle:'bold'
     }
@@ -579,53 +527,7 @@ function winGame() {
   });
 }
 
-// =====================================
-// MESSAGE
-// =====================================
-
-function showMessage(text,color) {
-
-  messageText.setText(text);
-  messageText.setColor(color);
-
-  this.time.delayedCall(1000, ()=> {
-    messageText.setText('');
-  });
-}
-
-// =====================================
-// UPDATE LOOP
-// =====================================
-
 function update() {
-
-  if(!gameStarted) return;
-
-  // obstacle mendekat ala subway surfers
-  obstacle.scale += 0.006 * obstacleSpeed;
-  obstacleText.scale += 0.006 * obstacleSpeed;
-
-  obstacle.y += 2.5 * obstacleSpeed;
-  obstacleText.y += 2.5 * obstacleSpeed;
-
-  // jika obstacle sampai player
-  if(obstacle.scale >= 2.5) {
-
-    lives--;
-
-    heartsText.setText('❤️'.repeat(lives));
-
-    this.cameras.main.shake(300,0.01);
-
-    showMessage.call(this,'TOO SLOW! 💥','#ff0000');
-
-    if(lives <= 0) {
-      gameOver.call(this);
-      return;
-    }
-
-    generateQuestion.call(this);
-  }
 
 }
 
