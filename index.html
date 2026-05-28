@@ -3,459 +3,631 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tiger Math Runner</title>
+  <title>Dino Math Runner</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
 
   <style>
-    * {
+    body {
       margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+      overflow: hidden;
+      background: #87ceeb;
       font-family: Arial, sans-serif;
     }
 
-    body {
-      overflow: hidden;
-      background: linear-gradient(#87ceeb, #dff6ff);
-    }
-
-    #game {
-      width: 100vw;
-      height: 100vh;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .ground {
-      position: absolute;
-      bottom: 0;
-      width: 100%;
-      height: 180px;
-      background: #6cc551;
-      border-top: 6px solid #4d9b38;
-    }
-
-    .tiger {
-      position: absolute;
-      bottom: 120px;
-      left: 100px;
-      font-size: 80px;
-      transition: 0.2s;
-      z-index: 10;
-    }
-
-    .obstacle {
-      position: absolute;
-      bottom: 110px;
-      right: -200px;
-      width: 150px;
-      height: 120px;
-      background: #777;
-      border-radius: 20px;
-      border-bottom: 10px solid #555;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 32px;
-      font-weight: bold;
-    }
-
-    .top-ui {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      right: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      z-index: 20;
-    }
-
-    .level,
-    .score {
-      background: white;
-      padding: 10px 20px;
-      border-radius: 15px;
-      font-size: 22px;
-      font-weight: bold;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    }
-
-    .hearts {
-      font-size: 40px;
-    }
-
-    .choices {
-      position: absolute;
-      top: 120px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: grid;
-      grid-template-columns: repeat(2, 220px);
-      gap: 20px;
-      z-index: 20;
-    }
-
-    .choice {
-      padding: 18px;
-      font-size: 28px;
-      border: none;
-      border-radius: 18px;
-      background: white;
-      cursor: pointer;
-      font-weight: bold;
-      transition: 0.2s;
-      box-shadow: 0 5px 10px rgba(0,0,0,0.2);
-    }
-
-    .choice:hover {
-      transform: scale(1.05);
-      background: #ffe066;
-    }
-
-    .start-screen,
-    .game-over,
-    .finish-screen {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.7);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      color: white;
-      z-index: 100;
-      text-align: center;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    .title {
-      font-size: 70px;
-      margin-bottom: 20px;
-      text-shadow: 3px 3px 10px black;
-    }
-
-    .subtitle {
-      font-size: 28px;
-      margin-bottom: 40px;
-    }
-
-    .btn {
-      padding: 20px 50px;
-      border: none;
-      border-radius: 20px;
-      font-size: 28px;
-      font-weight: bold;
-      cursor: pointer;
-      background: #ffcc00;
-      transition: 0.2s;
-    }
-
-    .btn:hover {
-      transform: scale(1.05);
-      background: #ffdd33;
-    }
-
-    .message {
-      position: absolute;
-      top: 320px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 42px;
-      font-weight: bold;
-      z-index: 50;
-      color: white;
-      text-shadow: 2px 2px 8px black;
+    canvas {
+      display: block;
+      margin: auto;
     }
   </style>
 </head>
 <body>
 
-<div id="game">
-
-  <div class="top-ui">
-    <div class="level">Level: <span id="level">1</span></div>
-    <div class="score">Score: <span id="score">0</span></div>
-    <div class="hearts" id="hearts">❤️❤️❤️</div>
-  </div>
-
-  <div class="choices" id="choices"></div>
-
-  <div class="message" id="message"></div>
-
-  <div class="tiger" id="tiger">🐯🚲</div>
-
-  <div class="obstacle" id="obstacle">2 × 3</div>
-
-  <div class="ground"></div>
-
-  <div class="start-screen" id="startScreen">
-    <div class="title">Tiger Math Runner</div>
-    <div class="subtitle">
-      Jawab soal matematika dan bantu macan mencapai finish! 🐯
-    </div>
-    <button class="btn" onclick="startGame()">START</button>
-  </div>
-
-  <div class="game-over hidden" id="gameOver">
-    <div class="title">GAME OVER</div>
-    <button class="btn" onclick="restartGame()">RESTART</button>
-  </div>
-
-  <div class="finish-screen hidden" id="finishScreen">
-    <div class="title">YOU WIN! 🎉</div>
-    <div class="subtitle">Macan berhasil mencapai finish!</div>
-    <button class="btn" onclick="restartGame()">PLAY AGAIN</button>
-  </div>
-
-</div>
-
 <script>
 
-const obstacle = document.getElementById('obstacle');
-const choicesDiv = document.getElementById('choices');
-const tiger = document.getElementById('tiger');
-const heartsDisplay = document.getElementById('hearts');
-const levelDisplay = document.getElementById('level');
-const scoreDisplay = document.getElementById('score');
-const message = document.getElementById('message');
+const config = {
+  type: Phaser.AUTO,
+  width: 1280,
+  height: 720,
+  backgroundColor: '#87CEEB',
+  scene: {
+    preload,
+    create,
+    update
+  }
+};
 
-let lives = 3;
-let level = 1;
-let score = 0;
-let questionCount = 0;
-let obstacleX = window.innerWidth;
-let gameRunning = false;
-let speed = 6;
+const game = new Phaser.Game(config);
 
+let dino;
+let obstacle;
+let obstacleText;
+let answerButtons = [];
+let xpText;
+let levelText;
+let heartsText;
+let messageText;
+let startButton;
+let startTitle;
+let finishText;
+
+let gameStarted = false;
 let currentAnswer = 0;
+let currentLevel = 1;
+let currentQuestion = 0;
+let xp = 0;
+let lives = 3;
+let obstacleSpeed = 2;
 
-const correctSound = new Audio('https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8d80c8f6a.mp3?filename=correct-2-46134.mp3');
-const wrongSound = new Audio('https://cdn.pixabay.com/download/audio/2022/03/15/audio_9f9d6d62f1.mp3?filename=error-126627.mp3');
-const bgMusic = new Audio('https://cdn.pixabay.com/download/audio/2022/10/25/audio_946af7d9d1.mp3?filename=fun-kids-126381.mp3');
+let bg1;
+let bg2;
+let grass1;
+let grass2;
 
-bgMusic.loop = true;
-bgMusic.volume = 0.3;
+const questionsPerLevel = 5;
+
+function preload() {
+}
+
+function create() {
+
+  // ============================
+  // BACKGROUND
+  // ============================
+
+  bg1 = this.add.rectangle(640, 360, 1280, 720, 0x87CEEB);
+
+  // awan
+  for(let i=0; i<8; i++) {
+    this.add.ellipse(
+      Phaser.Math.Between(0,1280),
+      Phaser.Math.Between(50,250),
+      180,
+      70,
+      0xffffff
+    ).setAlpha(0.8);
+  }
+
+  // pohon kiri kanan
+  for(let i=0; i<10; i++) {
+
+    // kiri
+    this.add.rectangle(80, 150 + i*80, 25, 80, 0x8B5A2B);
+    this.add.circle(80, 110 + i*80, 50, 0x2ecc71);
+
+    // kanan
+    this.add.rectangle(1200, 150 + i*80, 25, 80, 0x8B5A2B);
+    this.add.circle(1200, 110 + i*80, 50, 0x2ecc71);
+  }
+
+  // rumput
+  grass1 = this.add.rectangle(640, 650, 1280, 140, 0x4CAF50);
+  grass2 = this.add.rectangle(640, 700, 1280, 60, 0x2E7D32);
+
+  // jalan
+  this.add.rectangle(640, 550, 1280, 220, 0x666666);
+
+  // garis jalan
+  for(let i=0; i<20; i++) {
+    this.add.rectangle(100 + i*70, 550, 40, 8, 0xffffff);
+  }
+
+  // ============================
+  // UI
+  // ============================
+
+  xpText = this.add.text(40, 20, '⭐ XP: 0', {
+    fontSize: '34px',
+    color: '#ffffff',
+    fontStyle: 'bold',
+    backgroundColor: '#00000088',
+    padding: {x:15,y:10}
+  });
+
+  levelText = this.add.text(450, 20, 'LEVEL 1', {
+    fontSize: '34px',
+    color: '#ffffff',
+    fontStyle: 'bold',
+    backgroundColor: '#00000088',
+    padding: {x:15,y:10}
+  });
+
+  heartsText = this.add.text(1000, 20, '❤️❤️❤️', {
+    fontSize: '40px'
+  });
+
+  // ============================
+  // DINO CHARACTER
+  // ============================
+
+  dino = this.add.text(250, 520, '🦖🚲', {
+    fontSize: '90px'
+  });
+
+  // goyang-goyang animation
+  this.tweens.add({
+    targets: dino,
+    y: 510,
+    duration: 400,
+    yoyo: true,
+    repeat: -1
+  });
+
+  // ============================
+  // OBSTACLE
+  // ============================
+
+  obstacle = this.add.rectangle(640, 250, 100, 80, 0x777777)
+    .setStrokeStyle(6,0x555555);
+
+  obstacleText = this.add.text(640, 250, '', {
+    fontSize: '42px',
+    color: '#ffffff',
+    fontStyle: 'bold'
+  }).setOrigin(0.5);
+
+  obstacle.visible = false;
+  obstacleText.visible = false;
+
+  // ============================
+  // MESSAGE
+  // ============================
+
+  messageText = this.add.text(640, 180, '', {
+    fontSize: '50px',
+    color: '#ffff00',
+    fontStyle: 'bold',
+    stroke: '#000000',
+    strokeThickness: 8
+  }).setOrigin(0.5);
+
+  // ============================
+  // ANSWER BUTTONS
+  // ============================
+
+  createAnswerButtons.call(this);
+
+  // ============================
+  // START SCREEN
+  // ============================
+
+  this.add.rectangle(640,360,1280,720,0x000000,0.6)
+    .setDepth(100)
+    .setName('overlay');
+
+  startTitle = this.add.text(640,220,
+    'DINO MATH RUNNER',
+    {
+      fontSize:'72px',
+      color:'#ffffff',
+      fontStyle:'bold',
+      stroke:'#000000',
+      strokeThickness:10
+    }
+  ).setOrigin(0.5).setDepth(101);
+
+  this.add.text(640,330,
+    'Jawab soal matematika untuk menghancurkan batu!\n\n⭐ Jawaban benar = +10 XP\n❤️ Salah = kehilangan nyawa',
+    {
+      align:'center',
+      fontSize:'34px',
+      color:'#ffffff',
+      backgroundColor:'#00000088',
+      padding:{x:20,y:20}
+    }
+  ).setOrigin(0.5).setDepth(101);
+
+  startButton = this.add.text(640,520,
+    'START GAME',
+    {
+      fontSize:'48px',
+      color:'#000000',
+      backgroundColor:'#FFD93D',
+      padding:{x:30,y:20},
+      fontStyle:'bold'
+    }
+  )
+  .setOrigin(0.5)
+  .setInteractive()
+  .setDepth(101);
+
+  startButton.on('pointerdown', ()=> {
+    startGame.call(this);
+  });
+
+  // ============================
+  // KEYBOARD SUPPORT
+  // ============================
+
+  this.input.keyboard.on('keydown-A', ()=> {
+    if(answerButtons[0]) checkAnswer.call(this, answerButtons[0].answer);
+  });
+
+  this.input.keyboard.on('keydown-B', ()=> {
+    if(answerButtons[1]) checkAnswer.call(this, answerButtons[1].answer);
+  });
+
+  this.input.keyboard.on('keydown-C', ()=> {
+    if(answerButtons[2]) checkAnswer.call(this, answerButtons[2].answer);
+  });
+
+  this.input.keyboard.on('keydown-D', ()=> {
+    if(answerButtons[3]) checkAnswer.call(this, answerButtons[3].answer);
+  });
+
+}
+
+// =====================================
+// CREATE ANSWER BUTTONS
+// =====================================
+
+function createAnswerButtons() {
+
+  const labels = ['A','B','C','D'];
+
+  for(let i=0; i<4; i++) {
+
+    let x = 300 + (i%2)*400;
+    let y = 80 + Math.floor(i/2)*90;
+
+    const btn = this.add.text(x,y,'',{
+      fontSize:'32px',
+      color:'#000000',
+      backgroundColor:'#ffffff',
+      padding:{x:25,y:15},
+      fontStyle:'bold'
+    })
+    .setInteractive();
+
+    btn.on('pointerdown', ()=> {
+      checkAnswer.call(this, btn.answer);
+    });
+
+    answerButtons.push(btn);
+  }
+}
+
+// =====================================
+// START GAME
+// =====================================
 
 function startGame() {
-  document.getElementById('startScreen').classList.add('hidden');
-  gameRunning = true;
-  bgMusic.play();
-  generateQuestion();
-  moveObstacle();
+
+  gameStarted = true;
+
+  this.children.getByName('overlay').destroy();
+  startTitle.destroy();
+  startButton.destroy();
+
+  generateQuestion.call(this);
 }
 
-function restartGame() {
-  location.reload();
-}
+// =====================================
+// GENERATE QUESTION
+// =====================================
 
 function generateQuestion() {
 
-  let num1, num2, operator;
+  let num1;
+  let num2;
+  let operator;
 
-  if(level <= 2) {
+  if(currentLevel <= 2) {
     operator = '×';
-    num1 = random(1,5);
-    num2 = random(1,5);
+    num1 = Phaser.Math.Between(1,5);
+    num2 = Phaser.Math.Between(1,5);
   }
-  else if(level <= 4) {
-    operator = Math.random() < 0.5 ? '×' : '÷';
-    num1 = random(1,5);
-    num2 = random(1,5);
+  else if(currentLevel <=4) {
+    operator = Phaser.Math.Between(0,1) ? '×' : '÷';
+    num1 = Phaser.Math.Between(1,5);
+    num2 = Phaser.Math.Between(1,5);
   }
   else {
-    operator = Math.random() < 0.5 ? '×' : '÷';
-    num1 = random(6,10);
-    num2 = random(6,10);
+    operator = Phaser.Math.Between(0,1) ? '×' : '÷';
+    num1 = Phaser.Math.Between(6,10);
+    num2 = Phaser.Math.Between(6,10);
   }
+
+  let question;
 
   if(operator === '×') {
     currentAnswer = num1 * num2;
-    obstacle.innerText = `${num1} × ${num2}`;
+    question = `${num1} × ${num2}`;
   }
   else {
     currentAnswer = num1;
-    obstacle.innerText = `${num1 * num2} ÷ ${num2}`;
+    question = `${num1*num2} ÷ ${num2}`;
   }
 
-  createChoices();
+  obstacleText.setText(question);
+
+  createChoices(question);
+
+  // ukuran obstacle berdasarkan kesulitan
+  let difficulty = Math.max(num1,num2);
+
+  obstacle.width = 80 + difficulty*18;
+  obstacle.height = 60 + difficulty*15;
+
+  obstacle.scale = 0.2;
+  obstacle.x = 640;
+  obstacle.y = 200;
+
+  obstacleText.scale = 0.2;
+  obstacleText.x = 640;
+  obstacleText.y = 200;
+
+  obstacle.visible = true;
+  obstacleText.visible = true;
+
 }
 
+// =====================================
+// CREATE CHOICES
+// =====================================
+
 function createChoices() {
-  choicesDiv.innerHTML = '';
 
-  let answers = [currentAnswer];
+  let choices = [currentAnswer];
 
-  while(answers.length < 4) {
-    let wrong = currentAnswer + random(-10,10);
+  while(choices.length < 4) {
 
-    if(wrong !== currentAnswer && wrong > 0 && !answers.includes(wrong)) {
-      answers.push(wrong);
+    let wrong = currentAnswer + Phaser.Math.Between(-15,15);
+
+    if(wrong > 0 && !choices.includes(wrong)) {
+      choices.push(wrong);
     }
   }
 
-  answers.sort(() => Math.random() - 0.5);
+  Phaser.Utils.Array.Shuffle(choices);
 
-  const labels = ['A', 'B', 'C', 'D'];
+  const labels = ['A','B','C','D'];
 
-  answers.forEach((answer, index) => {
-    const btn = document.createElement('button');
-    btn.className = 'choice';
-    btn.innerText = `${labels[index]}. ${answer}`;
+  answerButtons.forEach((btn,index)=> {
 
-    btn.onclick = () => checkAnswer(answer);
+    btn.answer = choices[index];
 
-    choicesDiv.appendChild(btn);
+    btn.setText(`${labels[index]}. ${choices[index]}`);
   });
 }
 
+// =====================================
+// CHECK ANSWER
+// =====================================
+
 function checkAnswer(answer) {
 
-  if(!gameRunning) return;
+  if(!gameStarted) return;
 
   if(answer === currentAnswer) {
-    correctSound.play();
-    score += 10;
-    questionCount++;
 
-    showMessage('CORRECT! 🎉');
+    xp += 10;
+    currentQuestion++;
 
-    tiger.style.transform = 'translateY(-50px)';
+    xpText.setText(`⭐ XP: ${xp}`);
 
-    setTimeout(() => {
-      tiger.style.transform = 'translateY(0px)';
-    }, 300);
+    showMessage.call(this,'CORRECT! +10 XP ⭐','#00ff00');
 
-    if(questionCount >= 5) {
-      nextLevel();
-    }
-    else {
-      resetObstacle();
-      generateQuestion();
-    }
+    // obstacle pecah
+    this.tweens.add({
+      targets:[obstacle, obstacleText],
+      alpha:0,
+      duration:300,
+      onComplete: ()=> {
+
+        obstacle.alpha = 1;
+        obstacleText.alpha = 1;
+
+        if(currentQuestion >= questionsPerLevel) {
+          nextLevel.call(this);
+        }
+        else {
+          generateQuestion.call(this);
+        }
+      }
+    });
+
+    // dino bounce
+    this.tweens.add({
+      targets:dino,
+      y:480,
+      duration:120,
+      yoyo:true
+    });
+
   }
   else {
-    wrongSound.play();
+
     lives--;
 
-    showMessage('OOPS! 😭');
+    heartsText.setText('❤️'.repeat(lives));
 
-    updateHearts();
+    showMessage.call(this,'OOPS! 😭','#ff0000');
 
-    tiger.style.transform = 'translateX(-20px)';
+    // shake camera
+    this.cameras.main.shake(300,0.01);
 
-    setTimeout(() => {
-      tiger.style.transform = 'translateX(0px)';
-    }, 300);
+    // dino mundur
+    this.tweens.add({
+      targets:dino,
+      x:220,
+      duration:120,
+      yoyo:true
+    });
 
     if(lives <= 0) {
-      gameOver();
+      gameOver.call(this);
+      return;
     }
-    else {
-      resetObstacle();
-      generateQuestion();
-    }
-  }
 
-  scoreDisplay.innerText = score;
+    generateQuestion.call(this);
+  }
 }
 
-function nextLevel() {
-  level++;
-  questionCount = 0;
+// =====================================
+// NEXT LEVEL
+// =====================================
 
-  if(level > 5) {
-    winGame();
+function nextLevel() {
+
+  currentLevel++;
+  currentQuestion = 0;
+
+  if(currentLevel > 5) {
+    winGame.call(this);
     return;
   }
 
-  speed += 2;
+  obstacleSpeed += 0.8;
 
-  levelDisplay.innerText = level;
+  levelText.setText(`LEVEL ${currentLevel}`);
 
-  showMessage(`LEVEL ${level}! 🔥`);
+  showMessage.call(this,`LEVEL ${currentLevel}! 🔥`,'#ffff00');
 
-  resetObstacle();
-  generateQuestion();
+  generateQuestion.call(this);
 }
 
-function updateHearts() {
-  heartsDisplay.innerText = '❤️'.repeat(lives);
-}
+// =====================================
+// GAME OVER
+// =====================================
 
 function gameOver() {
-  gameRunning = false;
-  bgMusic.pause();
-  document.getElementById('gameOver').classList.remove('hidden');
+
+  gameStarted = false;
+
+  this.add.rectangle(640,360,1280,720,0x000000,0.7);
+
+  this.add.text(640,260,
+    'GAME OVER',
+    {
+      fontSize:'80px',
+      color:'#ff0000',
+      fontStyle:'bold'
+    }
+  ).setOrigin(0.5);
+
+  this.add.text(640,360,
+    `XP AKHIR: ${xp}`,
+    {
+      fontSize:'42px',
+      color:'#ffffff'
+    }
+  ).setOrigin(0.5);
+
+  const restart = this.add.text(640,500,
+    'RESTART',
+    {
+      fontSize:'50px',
+      backgroundColor:'#FFD93D',
+      color:'#000000',
+      padding:{x:30,y:20},
+      fontStyle:'bold'
+    }
+  )
+  .setOrigin(0.5)
+  .setInteractive();
+
+  restart.on('pointerdown', ()=> {
+    location.reload();
+  });
 }
+
+// =====================================
+// WIN GAME
+// =====================================
 
 function winGame() {
-  gameRunning = false;
-  bgMusic.pause();
-  document.getElementById('finishScreen').classList.remove('hidden');
+
+  gameStarted = false;
+
+  this.add.rectangle(640,360,1280,720,0x000000,0.7);
+
+  finishText = this.add.text(640,260,
+    'YOU WIN! 🎉',
+    {
+      fontSize:'90px',
+      color:'#ffff00',
+      fontStyle:'bold',
+      stroke:'#000000',
+      strokeThickness:10
+    }
+  ).setOrigin(0.5);
+
+  this.add.text(640,380,
+    `TOTAL XP: ${xp}`,
+    {
+      fontSize:'48px',
+      color:'#ffffff'
+    }
+  ).setOrigin(0.5);
+
+  const replay = this.add.text(640,520,
+    'PLAY AGAIN',
+    {
+      fontSize:'48px',
+      backgroundColor:'#FFD93D',
+      color:'#000000',
+      padding:{x:30,y:20},
+      fontStyle:'bold'
+    }
+  )
+  .setOrigin(0.5)
+  .setInteractive();
+
+  replay.on('pointerdown', ()=> {
+    location.reload();
+  });
 }
 
-function moveObstacle() {
+// =====================================
+// MESSAGE
+// =====================================
 
-  function animate() {
+function showMessage(text,color) {
 
-    if(!gameRunning) return;
+  messageText.setText(text);
+  messageText.setColor(color);
 
-    obstacleX -= speed;
+  this.time.delayedCall(1000, ()=> {
+    messageText.setText('');
+  });
+}
 
-    obstacle.style.right = (window.innerWidth - obstacleX) + 'px';
+// =====================================
+// UPDATE LOOP
+// =====================================
 
-    if(obstacleX < 200) {
-      lives--;
-      updateHearts();
+function update() {
 
-      wrongSound.play();
+  if(!gameStarted) return;
 
-      if(lives <= 0) {
-        gameOver();
-        return;
-      }
+  // obstacle mendekat ala subway surfers
+  obstacle.scale += 0.006 * obstacleSpeed;
+  obstacleText.scale += 0.006 * obstacleSpeed;
 
-      resetObstacle();
-      generateQuestion();
+  obstacle.y += 2.5 * obstacleSpeed;
+  obstacleText.y += 2.5 * obstacleSpeed;
+
+  // jika obstacle sampai player
+  if(obstacle.scale >= 2.5) {
+
+    lives--;
+
+    heartsText.setText('❤️'.repeat(lives));
+
+    this.cameras.main.shake(300,0.01);
+
+    showMessage.call(this,'TOO SLOW! 💥','#ff0000');
+
+    if(lives <= 0) {
+      gameOver.call(this);
+      return;
     }
 
-    requestAnimationFrame(animate);
+    generateQuestion.call(this);
   }
 
-  animate();
 }
-
-function resetObstacle() {
-  obstacleX = window.innerWidth;
-}
-
-function random(min,max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function showMessage(text) {
-  message.innerText = text;
-
-  setTimeout(() => {
-    message.innerText = '';
-  }, 1000);
-}
-
-window.addEventListener('keydown', (e) => {
-
-  const buttons = document.querySelectorAll('.choice');
-
-  if(e.key.toLowerCase() === 'a') buttons[0]?.click();
-  if(e.key.toLowerCase() === 'b') buttons[1]?.click();
-  if(e.key.toLowerCase() === 'c') buttons[2]?.click();
-  if(e.key.toLowerCase() === 'd') buttons[3]?.click();
-
-});
 
 </script>
 
